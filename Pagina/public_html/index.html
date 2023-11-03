@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Sistema de Monitoramento Agrícola</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="style.css">
+    </head>
+   <body data-home-page="Página-Inicial.html" data-home-page-title="Página Inicial" data-path-to-root="./" class="u-body u-palette-1-base u-xl-mode" data-lang="pt">
+    <div class="container">
+        <h1 class="title">Sistema de Monitoramento Agrícola</h1>
+        <h2 id="clock">data e hora</h2>
+        <div class="info-container">
+            <div class="info-item">
+                <div class="icon"><img src="images/481431.png" alt=""></div>
+                <div class="inf">
+                    <h2 id="temp">Temperatura</h2>
+                    <h2 class="unit">°C</h2>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="icon"><img src="images/9290237.png" alt=""></div>
+                <div class="inf">
+                <h2 id="umid">Umidade</h2> 
+                <h2 class="unit">%</h2>
+                </div>
+            </div>
+        </div>
+         <h2 class="subtitle">Histórico</h2>
+        <div class="historico"> 
+            <div id="lista"></div>
+        </div>
+    </div>
+
+       <script type="module">
+           import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js"; //sempre verifique a versão mais atual no projeto
+           import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+
+           // Obtém os elementos do DOM
+           const tempElement = document.getElementById('temp');
+           const umidElement = document.getElementById('umid');
+           const varLista = document.getElementById("lista");
+
+           // Função para atualizar o tempo
+           function updateTime() {
+               const now = new Date();
+               const year = now.getFullYear();
+               const monthNames = [
+                   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+               ];
+               const month = monthNames[now.getMonth()];
+               const day = String(now.getDate()).padStart(2, '0');
+               const hours = String(now.getHours()).padStart(2, '0');
+               const minutes = String(now.getMinutes()).padStart(2, '0');
+               const seconds = String(now.getSeconds()).padStart(2, '0');
+
+               // Atualiza o relógio no DOM
+               const clockElement = document.getElementById('clock');
+               const timeString = `${year} / ${month} / ${day} / ${hours}:${minutes}:${seconds}`;
+               clockElement.textContent = timeString;
+
+               // Obtém os valores de temperatura e umidade dos elementos da página
+               const temperatura = tempElement.innerText;
+               const umidade = umidElement.innerText;
+           }
+
+           // Configuração do Firebase, essas informações você consegue no console do firebase
+           const firebaseConfig = {
+            apiKey: "--------",
+            authDomain: "-------",
+            databaseURL: "-------",
+            projectId: "--------",
+            storageBucket: "----------",
+            messagingSenderId: "-----------",
+            appId: "----------------"
+            };
+
+           // Inicializa o Firebase
+           const app = initializeApp(firebaseConfig);
+           const database = getDatabase(app);
+           const dbRef = ref(database, "/");
+           
+           // Função para criar elementos a partir dos dados do Firebase
+           function createElementsForData(data, parentDiv, parentKey = null) {
+               for (const key in data) {
+                   if (data.hasOwnProperty(key)) {
+                       const value = data[key];
+
+                       if (typeof value !== 'object') {
+                           const keyElement = document.createElement('p');
+                           keyElement.textContent = `${parentKey ? `${parentKey}.${key}` : key} = ${value}`;
+                           parentDiv.appendChild(keyElement);
+                       } else {
+                           // Recursivamente criar elementos para chaves internas
+                           createElementsForData(value, parentDiv, parentKey ? `${parentKey}.${key}` : key);
+                       }
+                   }
+           }
+           }
+
+           // Obtém dados do Firebase e cria elementos na div de histórico
+           get(dbRef)
+                   .then((snapshot) => {
+                       if (snapshot.exists()) {
+                           const data = snapshot.val();
+                           createElementsForData(data, varLista);
+                       } else {
+                           console.log("No data available");
+                       }
+                   })
+                   .catch((error) => {
+                       console.error(error);
+                   });
+            
+    //+++++++++++++++++++++++++++++++++
+    function atualizarTemperatura() {
+    const dataRef = ref(database, '/atual/Temperatura');
+    get(dataRef)
+    .then((snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const firebaseDataElement = document.getElementById('temp');
+            firebaseDataElement.textContent = `${data}`;
+        } else {
+            console.log("No data available");
+        }
+    })
+    .catch((error) => {
+        console.error(error);
+    });
+    }
+     function atualizarUmidade() {
+    const dataRef = ref(database, '/atual/Umidade');
+    get(dataRef)
+    .then((snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const firebaseDataElement = document.getElementById('umid');
+            firebaseDataElement.textContent = `${data}`;
+        } else {
+            console.log("No data available");
+        }
+    })
+    .catch((error) => {
+        console.error(error);
+    });
+    }
+    
+    
+           // Atualiza o tempo a cada segundo
+           setInterval(atualizarTemperatura, 1000);
+           setInterval(atualizarUmidade, 1000);
+           setInterval(updateTime, 1000);
+           
+           // Chama updateTime para exibir o tempo na inicialização
+           updateTime();
+       </script>
+</body>
+</html>
